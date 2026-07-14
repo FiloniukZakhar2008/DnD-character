@@ -1,5 +1,5 @@
 {
-  "name": "untitled",
+  "name": "D&D Character Master",
   "site": {
     "installCommand": "npm install",
     "buildCommand": "npm run build",
