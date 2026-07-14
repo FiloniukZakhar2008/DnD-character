@@ -6,6 +6,18 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Layout from '@/components/Layout';
+import Home from '@/pages/Home';
+import CharacterCreate from '@/pages/CharacterCreate';
+import CharacterDetail from '@/pages/CharacterDetail';
+import LevelUp from '@/pages/LevelUp';
+import Reference from '@/pages/Reference';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
+import { Navigate } from 'react-router-dom';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -33,10 +45,26 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <Routes>
-      {/* Add your page Route elements here */}
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+  <Routes>
+    <Route path="/login" element={<Login />} />
+    <Route path="/register" element={<Register />} />
+    <Route path="/forgot-password" element={<ForgotPassword />} />
+    <Route path="/reset-password" element={<ResetPassword />} />
+    <Route
+      element={
+        <ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />
+      }
+    >
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/create" element={<CharacterCreate />} />
+        <Route path="/character/:id" element={<CharacterDetail />} />
+        <Route path="/character/:id/level-up" element={<LevelUp />} />
+        <Route path="/reference" element={<Reference />} />
+      </Route>
+    </Route>
+    <Route path="*" element={<PageNotFound />} />
+  </Routes>
   );
 };
 
