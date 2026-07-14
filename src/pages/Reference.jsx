@@ -101,6 +101,41 @@ function ClassesPanel() {
                   Броня: {selectedClass.prof_armor}
                 </span>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div className="bg-background/30 rounded-lg p-3 border border-border/30">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">HP на 1 рівні</p>
+                  <p className="text-sm text-foreground/90">{selectedClass.hp_at_1st_level}</p>
+                </div>
+                <div className="bg-background/30 rounded-lg p-3 border border-border/30">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">HP на вищих рівнях</p>
+                  <p className="text-sm text-foreground/90">{selectedClass.hp_at_higher_levels}</p>
+                </div>
+                <div className="bg-background/30 rounded-lg p-3 border border-border/30">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Зброя</p>
+                  <p className="text-sm text-foreground/90">{selectedClass.prof_weapons}</p>
+                </div>
+                <div className="bg-background/30 rounded-lg p-3 border border-border/30">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Навички</p>
+                  <p className="text-sm text-foreground/90">{selectedClass.prof_skills}</p>
+                </div>
+                <div className="bg-background/30 rounded-lg p-3 border border-border/30 sm:col-span-2">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Спорядження</p>
+                  <p className="text-sm text-foreground/90 whitespace-pre-wrap">{selectedClass.equipment}</p>
+                </div>
+                <div className="bg-emerald-500/5 rounded-lg p-3 border border-emerald-500/20 sm:col-span-2">
+                  <p className="text-xs text-emerald-400 uppercase tracking-wider mb-1">
+                    Покращення характеристик (ASI)
+                  </p>
+                  <p className="text-sm text-foreground/90">
+                    На рівнях 4, 8, 12, 16 та 19 можна збільшити одну характеристику на 2, або дві на 1 (макс. 20).
+                    {selectedClass.spellcasting_ability && (
+                      <span className="block mt-1 text-foreground/80">
+                        ⚡ Магія: ключова характеристика — {selectedClass.spellcasting_ability}.
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {tableData.length > 0 && (
@@ -207,6 +242,32 @@ function RacesPanel() {
                   Швидкість: {selectedRace.speed?.walk} ft
                 </span>
               </div>
+              {selectedRace.asi && selectedRace.asi.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {selectedRace.asi.flatMap((a) =>
+                    a.attributes.map((attr) => (
+                      <span
+                        key={attr}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-medium border border-emerald-500/20"
+                      >
+                        {attr} +{a.value}
+                      </span>
+                    ))
+                  )}
+                  {selectedRace.subraces?.flatMap((s) =>
+                    (s.asi || []).flatMap((a) =>
+                      a.attributes.map((attr) => (
+                        <span
+                          key={s.slug + attr}
+                          className="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-400 text-xs font-medium border border-sky-500/20"
+                        >
+                          {attr} +{a.value} · {s.name}
+                        </span>
+                      ))
+                    )
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">

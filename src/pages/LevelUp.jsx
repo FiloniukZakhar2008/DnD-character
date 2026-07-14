@@ -158,6 +158,15 @@ export default function LevelUp() {
               )}
             </div>
 
+            {[4, 8, 12, 16, 19].includes(nextLevel) && (
+              <div className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
+                <p className="text-sm text-amber-400 font-medium mb-0.5">⚡ Покращення характеристик!</p>
+                <p className="text-sm text-foreground/80">
+                  На цьому рівні можна збільшити одну характеристику на 2, або дві на 1 (макс. 20).
+                </p>
+              </div>
+            )}
+
             {nextRow && (
               <div className="grid grid-cols-2 gap-3">
                 {Object.entries(nextRow).map(([key, val]) => {
@@ -202,6 +211,20 @@ export default function LevelUp() {
           модифікатор Витривалості ({conMod >= 0 ? '+' : ''}
           {conMod}) = <span className="text-emerald-400 font-medium">+{avgHp + conMod}</span> HP.
         </p>
+        <div className="bg-background/30 rounded-lg p-3 border border-border/30 space-y-2 text-sm">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Правила кидків HP</p>
+          <p className="text-foreground/80">
+            <span className="text-foreground font-medium">🎲 Кидок:</span> кинь {classData?.hit_dice} + мод.
+            Витривалості ({conMod >= 0 ? '+' : ''}
+            {conMod}) і додай результат до поточного HP.
+          </p>
+          <p className="text-foreground/80">
+            <span className="text-foreground font-medium">📊 Середнє (фіксоване):</span> {avgHp} (середнє{' '}
+            {classData?.hit_dice}) + {conMod >= 0 ? '+' : ''}
+            {conMod} = <span className="text-emerald-400 font-medium">+{avgHp + conMod}</span> HP.
+          </p>
+          <p className="text-xs text-muted-foreground italic">{classData?.hp_at_higher_levels}</p>
+        </div>
         <div>
           <Label className="mb-1.5 block">Нове максимальне HP</Label>
           <div className="flex items-center gap-2 flex-wrap">
