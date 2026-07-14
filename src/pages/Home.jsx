@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { Characters } from '@/lib/localCharacters';
 import { Plus, Swords, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CharacterCard from '@/components/CharacterCard';
@@ -9,7 +9,7 @@ export default function Home() {
   const [characters, setCharacters] = useState(null);
 
   useEffect(() => {
-    base44.entities.Character.list('-updated_date', 50)
+    Characters.list()
       .then(setCharacters)
       .catch(() => setCharacters([]));
   }, []);

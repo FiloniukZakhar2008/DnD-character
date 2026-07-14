@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import { fetchClass, fetchRace } from '@/lib/dndApi';
+import { Characters } from '@/lib/localCharacters';
 import {
   parseClassTable,
   applyRacialASI,
@@ -26,8 +26,7 @@ export default function CharacterDetail() {
   const [editForm, setEditForm] = useState({ notes: '', max_hp: 0, appearance: '' });
 
   useEffect(() => {
-    base44.entities.Character
-      .get(id)
+    Characters.get(id)
       .then((c) => {
         setCharacter(c);
         setEditForm({ notes: c.notes || '', max_hp: c.max_hp || 0, appearance: c.appearance || '' });
@@ -64,7 +63,7 @@ export default function CharacterDetail() {
   const ac = 10 + dexMod;
 
   const saveEdit = async () => {
-    const updated = await base44.entities.Character.update(character.id, {
+    const updated = await Characters.update(character.id, {
       notes: editForm.notes,
       max_hp: parseInt(editForm.max_hp, 10) || 0,
       appearance: editForm.appearance,

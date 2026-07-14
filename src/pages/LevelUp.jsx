@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import { fetchClass } from '@/lib/dndApi';
+import { Characters } from '@/lib/localCharacters';
 import {
   parseClassTable,
   getLevelRow,
@@ -25,8 +25,7 @@ export default function LevelUp() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    base44.entities.Character
-      .get(id)
+    Characters.get(id)
       .then((c) => {
         setCharacter(c);
         if (c.class_slug) fetchClass(c.class_slug).then(setClassData).catch(() => {});
@@ -87,7 +86,7 @@ export default function LevelUp() {
   const handleLevelUp = async () => {
     setSaving(true);
     try {
-      await base44.entities.Character.update(character.id, {
+      await Characters.update(character.id, {
         level: nextLevel,
         max_hp: displayHp,
       });

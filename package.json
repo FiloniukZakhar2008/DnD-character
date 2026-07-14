@@ -1,5 +1,5 @@
 {
-  "name": "base44-app",
+  "name": "dnd-character-master",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -17,12 +17,16 @@
     "dist:mac": "vite build && electron-builder --mac",
     "dist:linux": "vite build && electron-builder --linux"
   },
+  "description": "D&D Майстерня — застосунок для створення персонажів",
+  "author": "D&D Майстерня",
   "build": {
     "appId": "com.local.ddcharactermaster",
     "productName": "D&D Майстерня",
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json"
     ],
     "win": {
       "target": "nsis"
@@ -35,8 +39,6 @@
     }
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.39",
-    "@base44/vite-plugin": "^1.0.30",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.3",

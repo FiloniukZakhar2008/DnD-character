@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import { fetchClasses, fetchRaces } from '@/lib/dndApi';
+import { Characters } from '@/lib/localCharacters';
 import {
   applyRacialASI,
   getRacialBonuses,
@@ -78,7 +78,7 @@ export default function CharacterCreate() {
   const handleCreate = async () => {
     setSaving(true);
     try {
-      const created = await base44.entities.Character.create({
+      const created = await Characters.create({
         name: form.name.trim(),
         background: form.background,
         appearance: form.appearance,

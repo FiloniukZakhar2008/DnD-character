@@ -1,10 +1,70 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const http = require('http');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 const PORT = 45123;
+
+let charactersFilePath;
+
+function initDatabase() {
+  charactersFilePath = path.join(app.getPath('userData'), 'characters.json');
+  if (!fs.existsSync(charactersFilePath)) {
+    fs.writeFileSync(charactersFilePath, '[]', 'utf-8');
+  }
+}
+
+function readCharacters() {
+  try {
+    const raw = fs.readFileSync(charactersFilePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function writeCharacters(list) {
+  fs.writeFileSync(charactersFilePath, JSON.stringify(list, null, 2), 'utf-8');
+}
+
+function registerCharacterHandlers() {
+  ipcMain.handle('characters:list', () => {
+    const list = readCharacters();
+    return [...list].sort((a, b) => (a.updated_date < b.updated_date ? 1 : -1));
+  });
+
+  ipcMain.handle('characters:get', (_event, id) => {
+    const found = readCharacters().find((c) => c.id === id);
+    if (!found) throw new Error('Персонажа не знайдено');
+    return found;
+  });
+
+  ipcMain.handle('characters:create', (_event, data) => {
+    const now = new Date().toISOString();
+    const character = { id: crypto.randomUUID(), ...data, created_date: now, updated_date: now };
+    const list = readCharacters();
+    list.push(character);
+    writeCharacters(list);
+    return character;
+  });
+
+  ipcMain.handle('characters:update', (_event, id, data) => {
+    const list = readCharacters();
+    const idx = list.findIndex((c) => c.id === id);
+    if (idx === -1) throw new Error('Персонажа не знайдено');
+    const updated = { ...list[idx], ...data, updated_date: new Date().toISOString() };
+    list[idx] = updated;
+    writeCharacters(list);
+    return updated;
+  });
+
+  ipcMain.handle('characters:remove', (_event, id) => {
+    writeCharacters(readCharacters().filter((c) => c.id !== id));
+    return { success: true };
+  });
+}
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -54,13 +114,18 @@ async function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 
   win.loadURL(`http://127.0.0.1:${PORT}`);
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  initDatabase();
+  registerCharacterHandlers();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

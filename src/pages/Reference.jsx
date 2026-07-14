@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { fetchClasses, fetchRaces } from '@/lib/dndApi';
-import { translateBatch, getDndImage } from '@/lib/dndContent';
 import { getClassNameUa, getRaceNameUa, getAbilityNameUa, translateAbilityNames } from '@/lib/dndUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, BookOpen, Users, Image as ImageIcon } from 'lucide-react';
@@ -12,8 +11,8 @@ export default function Reference() {
       <div>
         <h1 className="font-display text-3xl font-bold text-foreground mb-1">Довідник</h1>
         <p className="text-muted-foreground">
-          Уся інформація про класи та раси D&amp;D 5e — здібності, рівні, бонуси. Описи перекладаються на українську,
-          зображення генеруються під кожен клас та расу.
+          Уся інформація про класи та раси D&amp;D 5e — здібності, рівні, бонуси. Дані завантажуються з відкритого
+          Open5e API; докладні описи там англійською мовою.
         </p>
       </div>
 
@@ -104,36 +103,12 @@ function ClassesPanel() {
   }, []);
 
   useEffect(() => {
-    if (!selected || !classes) return;
-    const cls = classes.find((c) => c.slug === selected);
-    if (!cls) return;
+    // Дані класу приходять з англомовного Open5e API "як є" — без AI-перекладу й
+    // без генерації зображень (ці функції прибрано разом з Base44).
     setTranslation(null);
     setImg(null);
-    setImgLoading(true);
-    setContentLoading(true);
-    const texts = {
-      desc: cls.desc,
-      table: cls.table,
-      hp1: cls.hp_at_1st_level,
-      hpHigh: cls.hp_at_higher_levels,
-      armor: cls.prof_armor,
-      weapons: cls.prof_weapons,
-      saves: cls.prof_saving_throws,
-      skills: cls.prof_skills,
-      equip: cls.equipment,
-    };
-    Promise.all([
-      translateBatch(texts, `class_${selected}`),
-      getDndImage(selected, cls.name, 'class'),
-    ])
-      .then(([t, imgUrl]) => {
-        setTranslation(t);
-        setImg(imgUrl);
-      })
-      .finally(() => {
-        setImgLoading(false);
-        setContentLoading(false);
-      });
+    setImgLoading(false);
+    setContentLoading(false);
   }, [selected, classes]);
 
   const selectedClass = classes?.find((c) => c.slug === selected);
@@ -255,41 +230,12 @@ function RacesPanel() {
   }, []);
 
   useEffect(() => {
-    if (!selected || !races) return;
-    const race = races.find((r) => r.slug === selected);
-    if (!race) return;
+    // Дані раси приходять з англомовного Open5e API "як є" — без AI-перекладу й
+    // без генерації зображень (ці функції прибрано разом з Base44).
     setTranslation(null);
     setImg(null);
-    setImgLoading(true);
-    setContentLoading(true);
-    const texts = {
-      desc: race.desc,
-      asi_desc: race.asi_desc,
-      age: race.age,
-      alignment: race.alignment,
-      size: race.size,
-      speed_desc: race.speed_desc,
-      languages: race.languages,
-      vision: race.vision,
-      traits: race.traits,
-    };
-    (race.subraces || []).forEach((s) => {
-      if (s.desc) texts[`sub_${s.slug}_desc`] = s.desc;
-      if (s.asi_desc) texts[`sub_${s.slug}_asi`] = s.asi_desc;
-      if (s.traits) texts[`sub_${s.slug}_traits`] = s.traits;
-    });
-    Promise.all([
-      translateBatch(texts, `race_${selected}`),
-      getDndImage(selected, race.name, 'race'),
-    ])
-      .then(([t, imgUrl]) => {
-        setTranslation(t);
-        setImg(imgUrl);
-      })
-      .finally(() => {
-        setImgLoading(false);
-        setContentLoading(false);
-      });
+    setImgLoading(false);
+    setContentLoading(false);
   }, [selected, races]);
 
   const selectedRace = races?.find((r) => r.slug === selected);

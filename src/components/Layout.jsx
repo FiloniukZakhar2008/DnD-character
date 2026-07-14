@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Swords, BookOpen, Home as HomeIcon, LogOut } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Swords, BookOpen, Home as HomeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Layout() {
@@ -11,10 +10,6 @@ export default function Layout() {
     { to: '/', label: 'Персонажі', icon: HomeIcon },
     { to: '/reference', label: 'Довідник', icon: BookOpen },
   ];
-
-  const handleLogout = async () => {
-    await base44.auth.logout();
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -54,12 +49,6 @@ export default function Layout() {
                 </Link>
               );
             })}
-            <button
-              onClick={handleLogout}
-              className="ml-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </nav>
         </div>
       </header>
