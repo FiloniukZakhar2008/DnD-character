@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { fetchClasses, fetchRaces } from '@/lib/dndApi';
-import { parseClassTable } from '@/lib/dndUtils';
+import { translateBatch, getDndImage } from '@/lib/dndContent';
+import { getClassNameUa, getRaceNameUa, getAbilityNameUa, translateAbilityNames } from '@/lib/dndUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, BookOpen, Users } from 'lucide-react';
+import { Loader2, BookOpen, Users, Image as ImageIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export default function Reference() {
@@ -11,7 +12,8 @@ export default function Reference() {
       <div>
         <h1 className="font-display text-3xl font-bold text-foreground mb-1">Довідник</h1>
         <p className="text-muted-foreground">
-          Уся інформація про класи та раси D&amp;D 5e SRD — здібності, рівні, бонуси.
+          Уся інформація про класи та раси D&amp;D 5e — здібності, рівні, бонуси. Описи перекладаються на українську,
+          зображення генеруються під кожен клас та расу.
         </p>
       </div>
 
@@ -41,28 +43,109 @@ export default function Reference() {
   );
 }
 
+function DndImage({ src, loading, name }) {
+  if (loading) {
+    return (
+      <div className="w-full h-44 sm:h-52 rounded-xl bg-gradient-to-br from-card to-primary/10 border border-border/30 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-xs">Генерування зображення...</span>
+        </div>
+      </div>
+    );
+  }
+  if (!src) {
+    return (
+      <div className="w-full h-44 sm:h-52 rounded-xl bg-gradient-to-br from-card to-primary/10 border border-border/30 flex items-center justify-center">
+        <ImageIcon className="w-10 h-10 text-muted-foreground/30" />
+      </div>
+    );
+  }
+  return (
+    <div className="relative w-full h-44 sm:h-52 rounded-xl overflow-hidden border border-border/30">
+      <img src={src} alt={name} className="w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/20 to-transparent" />
+    </div>
+  );
+}
+
+function InfoCard({ title, text, full }) {
+  return (
+    <div className={`bg-background/30 rounded-lg p-3 border border-border/30 ${full ? 'sm:col-span-2' : ''}`}>
+      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{title}</p>
+      <p className="text-sm text-foreground/90 whitespace-pre-wrap">{text}</p>
+    </div>
+  );
+}
+
+function LoadingText() {
+  return (
+    <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
+      <Loader2 className="w-4 h-4 animate-spin" /> Переклад...
+    </div>
+  );
+}
+
 function ClassesPanel() {
   const [classes, setClasses] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [translation, setTranslation] = useState(null);
+  const [img, setImg] = useState(null);
+  const [imgLoading, setImgLoading] = useState(false);
+  const [contentLoading, setContentLoading] = useState(false);
 
   useEffect(() => {
     fetchClasses()
       .then((list) => {
         setClasses(list);
-        if (list.length > 0) setSelected(list[0].slug);
+        if (list[0]) setSelected(list[0].slug);
       })
       .catch(() => setClasses([]));
   }, []);
 
-  const selectedClass = classes?.find((c) => c.slug === selected);
-  const tableData = parseClassTable(selectedClass?.table);
+  useEffect(() => {
+    if (!selected || !classes) return;
+    const cls = classes.find((c) => c.slug === selected);
+    if (!cls) return;
+    setTranslation(null);
+    setImg(null);
+    setImgLoading(true);
+    setContentLoading(true);
+    const texts = {
+      desc: cls.desc,
+      table: cls.table,
+      hp1: cls.hp_at_1st_level,
+      hpHigh: cls.hp_at_higher_levels,
+      armor: cls.prof_armor,
+      weapons: cls.prof_weapons,
+      saves: cls.prof_saving_throws,
+      skills: cls.prof_skills,
+      equip: cls.equipment,
+    };
+    Promise.all([
+      translateBatch(texts, `class_${selected}`),
+      getDndImage(selected, cls.name, 'class'),
+    ])
+      .then(([t, imgUrl]) => {
+        setTranslation(t);
+        setImg(imgUrl);
+      })
+      .finally(() => {
+        setImgLoading(false);
+        setContentLoading(false);
+      });
+  }, [selected, classes]);
 
+  const selectedClass = classes?.find((c) => c.slug === selected);
   if (!classes)
     return (
       <div className="flex justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
+
+  const uaName = selectedClass ? getClassNameUa(selectedClass.slug, selectedClass.name) : '';
+  const t = translation || {};
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
@@ -78,7 +161,7 @@ function ClassesPanel() {
             }`}
           >
             <div className="flex items-center justify-between">
-              <p className="font-medium text-foreground text-sm">{c.name}</p>
+              <p className="font-medium text-foreground text-sm">{getClassNameUa(c.slug, c.name)}</p>
               <span className="text-xs text-muted-foreground">{c.hit_dice}</span>
             </div>
           </button>
@@ -88,40 +171,26 @@ function ClassesPanel() {
       <div className="bg-card/40 border border-border/40 rounded-2xl p-5 sm:p-6">
         {selectedClass && (
           <div className="space-y-5">
+            <DndImage src={img} loading={imgLoading} name={uaName} />
             <div>
-              <h2 className="font-display text-2xl font-bold text-foreground">{selectedClass.name}</h2>
+              <h2 className="font-display text-2xl font-bold text-foreground">{uaName}</h2>
               <div className="flex flex-wrap gap-2 mt-2 text-xs">
                 <span className="px-2 py-1 rounded-md bg-accent/60 text-foreground/80">
                   Кістка HP: {selectedClass.hit_dice}
                 </span>
                 <span className="px-2 py-1 rounded-md bg-accent/60 text-foreground/80">
-                  Збереження: {selectedClass.prof_saving_throws}
+                  Рятівні кидки: {translateAbilityNames(t.saves || selectedClass.prof_saving_throws)}
                 </span>
                 <span className="px-2 py-1 rounded-md bg-accent/60 text-foreground/80">
-                  Броня: {selectedClass.prof_armor}
+                  Броня: {t.armor || selectedClass.prof_armor}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                <div className="bg-background/30 rounded-lg p-3 border border-border/30">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">HP на 1 рівні</p>
-                  <p className="text-sm text-foreground/90">{selectedClass.hp_at_1st_level}</p>
-                </div>
-                <div className="bg-background/30 rounded-lg p-3 border border-border/30">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">HP на вищих рівнях</p>
-                  <p className="text-sm text-foreground/90">{selectedClass.hp_at_higher_levels}</p>
-                </div>
-                <div className="bg-background/30 rounded-lg p-3 border border-border/30">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Зброя</p>
-                  <p className="text-sm text-foreground/90">{selectedClass.prof_weapons}</p>
-                </div>
-                <div className="bg-background/30 rounded-lg p-3 border border-border/30">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Навички</p>
-                  <p className="text-sm text-foreground/90">{selectedClass.prof_skills}</p>
-                </div>
-                <div className="bg-background/30 rounded-lg p-3 border border-border/30 sm:col-span-2">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Спорядження</p>
-                  <p className="text-sm text-foreground/90 whitespace-pre-wrap">{selectedClass.equipment}</p>
-                </div>
+                <InfoCard title="HP на 1 рівні" text={t.hp1 || selectedClass.hp_at_1st_level} />
+                <InfoCard title="HP на вищих рівнях" text={t.hpHigh || selectedClass.hp_at_higher_levels} />
+                <InfoCard title="Зброя" text={t.weapons || selectedClass.prof_weapons} />
+                <InfoCard title="Навички" text={t.skills || selectedClass.prof_skills} />
+                <InfoCard title="Спорядження" text={t.equip || selectedClass.equipment} full />
                 <div className="bg-emerald-500/5 rounded-lg p-3 border border-emerald-500/20 sm:col-span-2">
                   <p className="text-xs text-emerald-400 uppercase tracking-wider mb-1">
                     Покращення характеристик (ASI)
@@ -130,7 +199,7 @@ function ClassesPanel() {
                     На рівнях 4, 8, 12, 16 та 19 можна збільшити одну характеристику на 2, або дві на 1 (макс. 20).
                     {selectedClass.spellcasting_ability && (
                       <span className="block mt-1 text-foreground/80">
-                        ⚡ Магія: ключова характеристика — {selectedClass.spellcasting_ability}.
+                        ⚡ Магія: ключова характеристика — {translateAbilityNames(selectedClass.spellcasting_ability)}.
                       </span>
                     )}
                   </p>
@@ -138,45 +207,27 @@ function ClassesPanel() {
               </div>
             </div>
 
-            {tableData.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-2 uppercase tracking-wider">
-                  Таблиця прогресії
-                </h3>
-                <div className="overflow-x-auto -mx-2 rounded-lg border border-border/30">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-border/40 bg-background/40">
-                        {Object.keys(tableData[0]).map((h) => (
-                          <th
-                            key={h}
-                            className="text-left px-3 py-2 text-muted-foreground font-medium whitespace-nowrap"
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tableData.map((row, i) => (
-                        <tr key={i} className="border-b border-border/20 hover:bg-background/30">
-                          {Object.values(row).map((val, j) => (
-                            <td key={j} className="px-3 py-2 text-foreground/80 whitespace-nowrap">
-                              {val}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2 uppercase tracking-wider">
+                Таблиця прогресії
+              </h3>
+              <div className="md-content overflow-x-auto max-h-[400px] overflow-y-auto pr-2 rounded-lg border border-border/30 p-2 bg-background/20">
+                {contentLoading && !t.table ? (
+                  <LoadingText />
+                ) : (
+                  <ReactMarkdown>{t.table || selectedClass.table}</ReactMarkdown>
+                )}
               </div>
-            )}
+            </div>
 
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2 uppercase tracking-wider">Опис класу</h3>
               <div className="md-content max-h-[400px] overflow-y-auto pr-2">
-                <ReactMarkdown>{selectedClass.desc}</ReactMarkdown>
+                {contentLoading && !t.desc ? (
+                  <LoadingText />
+                ) : (
+                  <ReactMarkdown>{t.desc || selectedClass.desc}</ReactMarkdown>
+                )}
               </div>
             </div>
           </div>
@@ -189,24 +240,68 @@ function ClassesPanel() {
 function RacesPanel() {
   const [races, setRaces] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [translation, setTranslation] = useState(null);
+  const [img, setImg] = useState(null);
+  const [imgLoading, setImgLoading] = useState(false);
+  const [contentLoading, setContentLoading] = useState(false);
 
   useEffect(() => {
     fetchRaces()
       .then((list) => {
         setRaces(list);
-        if (list.length > 0) setSelected(list[0].slug);
+        if (list[0]) setSelected(list[0].slug);
       })
       .catch(() => setRaces([]));
   }, []);
 
-  const selectedRace = races?.find((r) => r.slug === selected);
+  useEffect(() => {
+    if (!selected || !races) return;
+    const race = races.find((r) => r.slug === selected);
+    if (!race) return;
+    setTranslation(null);
+    setImg(null);
+    setImgLoading(true);
+    setContentLoading(true);
+    const texts = {
+      desc: race.desc,
+      asi_desc: race.asi_desc,
+      age: race.age,
+      alignment: race.alignment,
+      size: race.size,
+      speed_desc: race.speed_desc,
+      languages: race.languages,
+      vision: race.vision,
+      traits: race.traits,
+    };
+    (race.subraces || []).forEach((s) => {
+      if (s.desc) texts[`sub_${s.slug}_desc`] = s.desc;
+      if (s.asi_desc) texts[`sub_${s.slug}_asi`] = s.asi_desc;
+      if (s.traits) texts[`sub_${s.slug}_traits`] = s.traits;
+    });
+    Promise.all([
+      translateBatch(texts, `race_${selected}`),
+      getDndImage(selected, race.name, 'race'),
+    ])
+      .then(([t, imgUrl]) => {
+        setTranslation(t);
+        setImg(imgUrl);
+      })
+      .finally(() => {
+        setImgLoading(false);
+        setContentLoading(false);
+      });
+  }, [selected, races]);
 
+  const selectedRace = races?.find((r) => r.slug === selected);
   if (!races)
     return (
       <div className="flex justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
+
+  const uaName = selectedRace ? getRaceNameUa(selectedRace.slug, selectedRace.name) : '';
+  const t = translation || {};
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
@@ -221,7 +316,7 @@ function RacesPanel() {
                 : 'border-border/40 bg-card/30 hover:border-border/70'
             }`}
           >
-            <p className="font-medium text-foreground text-sm">{r.name}</p>
+            <p className="font-medium text-foreground text-sm">{getRaceNameUa(r.slug, r.name)}</p>
             <p className="text-xs text-muted-foreground">
               {r.size_raw} • {r.speed?.walk} ft
             </p>
@@ -232,8 +327,9 @@ function RacesPanel() {
       <div className="bg-card/40 border border-border/40 rounded-2xl p-5 sm:p-6">
         {selectedRace && (
           <div className="space-y-5">
+            <DndImage src={img} loading={imgLoading} name={uaName} />
             <div>
-              <h2 className="font-display text-2xl font-bold text-foreground">{selectedRace.name}</h2>
+              <h2 className="font-display text-2xl font-bold text-foreground">{uaName}</h2>
               <div className="flex flex-wrap gap-2 mt-2 text-xs">
                 <span className="px-2 py-1 rounded-md bg-accent/60 text-foreground/80">
                   Розмір: {selectedRace.size_raw}
@@ -250,7 +346,7 @@ function RacesPanel() {
                         key={attr}
                         className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-xs font-medium border border-emerald-500/20"
                       >
-                        {attr} +{a.value}
+                        {getAbilityNameUa(attr)} +{a.value}
                       </span>
                     ))
                   )}
@@ -261,7 +357,7 @@ function RacesPanel() {
                           key={s.slug + attr}
                           className="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-400 text-xs font-medium border border-sky-500/20"
                         >
-                          {attr} +{a.value} · {s.name}
+                          {getAbilityNameUa(attr)} +{a.value} · {s.name}
                         </span>
                       ))
                     )
@@ -271,14 +367,21 @@ function RacesPanel() {
             </div>
 
             <div className="space-y-3">
-              <InfoBlock title="Бонуси характеристик" content={selectedRace.asi_desc} />
-              <InfoBlock title="Вік" content={selectedRace.age} />
-              <InfoBlock title="Світогляд" content={selectedRace.alignment} />
-              <InfoBlock title="Розмір" content={selectedRace.size} />
-              <InfoBlock title="Швидкість" content={selectedRace.speed_desc} />
-              <InfoBlock title="Мови" content={selectedRace.languages} />
-              {selectedRace.vision && <InfoBlock title="Зір" content={selectedRace.vision} />}
-              <InfoBlock title="Особливості" content={selectedRace.traits} />
+              {contentLoading && !translation ? (
+                <LoadingText />
+              ) : (
+                <>
+                  <InfoBlock title="Опис" content={t.desc || selectedRace.desc} />
+                  <InfoBlock title="Бонуси характеристик" content={t.asi_desc || selectedRace.asi_desc} />
+                  <InfoBlock title="Вік" content={t.age || selectedRace.age} />
+                  <InfoBlock title="Світогляд" content={t.alignment || selectedRace.alignment} />
+                  <InfoBlock title="Розмір" content={t.size || selectedRace.size} />
+                  <InfoBlock title="Швидкість" content={t.speed_desc || selectedRace.speed_desc} />
+                  <InfoBlock title="Мови" content={t.languages || selectedRace.languages} />
+                  {selectedRace.vision && <InfoBlock title="Зір" content={t.vision || selectedRace.vision} />}
+                  <InfoBlock title="Особливості" content={t.traits || selectedRace.traits} />
+                </>
+              )}
             </div>
 
             {selectedRace.subraces?.length > 0 && (
@@ -289,9 +392,15 @@ function RacesPanel() {
                     <div key={s.slug} className="bg-background/30 rounded-lg p-3 border border-border/30">
                       <p className="font-medium text-foreground">{s.name}</p>
                       {s.asi_desc && (
-                        <p className="text-xs text-emerald-400 mt-1">{cleanMd(s.asi_desc)}</p>
+                        <div className="md-content text-xs text-emerald-400 mt-1">
+                          <ReactMarkdown>{t[`sub_${s.slug}_asi`] || s.asi_desc}</ReactMarkdown>
+                        </div>
                       )}
-                      {s.traits && <p className="text-xs text-muted-foreground mt-1">{cleanMd(s.traits)}</p>}
+                      {s.traits && (
+                        <div className="md-content text-xs text-muted-foreground mt-1">
+                          <ReactMarkdown>{t[`sub_${s.slug}_traits`] || s.traits}</ReactMarkdown>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -314,8 +423,4 @@ function InfoBlock({ title, content }) {
       </div>
     </div>
   );
-}
-
-function cleanMd(str) {
-  return str?.replace(/\*\*\*/g, '').replace(/\*\*/g, '').replace(/\*/g, '') || '';
 }

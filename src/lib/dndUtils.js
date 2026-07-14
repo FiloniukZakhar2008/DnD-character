@@ -140,3 +140,60 @@ export const ABILITIES = [
   'wisdom',
   'charisma',
 ];
+
+export const CLASS_NAMES_UA = {
+  barbarian: 'Варвар',
+  bard: 'Бард',
+  cleric: 'Жрець',
+  druid: 'Друїд',
+  fighter: 'Воїн',
+  monk: 'Монах',
+  paladin: 'Паладін',
+  ranger: 'Слідопит',
+  rogue: 'Злодій',
+  sorcerer: 'Чарівник',
+  warlock: 'Колдун',
+  wizard: 'Маг',
+};
+
+export const RACE_NAMES_UA = {
+  dragonborn: 'Драконорождений',
+  dwarf: 'Дворф',
+  elf: 'Ельф',
+  gnome: 'Гном',
+  'half-elf': 'Напівельф',
+  'half-orc': 'Напіворк',
+  halfling: 'Напіврослик',
+  human: 'Людина',
+  tiefling: 'Тифлінг',
+};
+
+const ABILITY_NAME_MAP = {
+  Strength: 'Сила',
+  Dexterity: 'Спритність',
+  Constitution: 'Витривалість',
+  Intelligence: 'Інтелект',
+  Wisdom: 'Мудрість',
+  Charisma: 'Харизма',
+};
+
+export function getClassNameUa(slug, fallback) {
+  return CLASS_NAMES_UA[slug] || fallback || slug;
+}
+
+export function getRaceNameUa(slug, fallback) {
+  return RACE_NAMES_UA[slug] || fallback || slug;
+}
+
+export function getAbilityNameUa(name) {
+  return ABILITY_NAME_MAP[name] || name;
+}
+
+export function translateAbilityNames(str) {
+  if (!str) return str;
+  let result = str;
+  Object.entries(ABILITY_NAME_MAP).forEach(([en, ua]) => {
+    result = result.replace(new RegExp(en, 'g'), ua);
+  });
+  return result;
+}

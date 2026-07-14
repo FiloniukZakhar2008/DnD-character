@@ -8,6 +8,10 @@ import {
   abilityModifier,
   parseHpAtFirstLevel,
   ABILITY_NAMES,
+  getClassNameUa,
+  getRaceNameUa,
+  getAbilityNameUa,
+  translateAbilityNames,
 } from '@/lib/dndUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,11 +83,11 @@ export default function CharacterCreate() {
         background: form.background,
         appearance: form.appearance,
         race_slug: form.race_slug,
-        race_name: selectedRace.name,
+        race_name: getRaceNameUa(selectedRace.slug, selectedRace.name),
         subrace_slug: form.subrace_slug,
         subrace_name: selectedSubrace?.name || '',
         class_slug: form.class_slug,
-        class_name: selectedClass.name,
+        class_name: getClassNameUa(selectedClass.slug, selectedClass.name),
         level: 1,
         ability_scores: form.ability_scores,
         max_hp: baseHp,
@@ -198,8 +202,19 @@ export default function CharacterCreate() {
                         : 'border-border/50 bg-background/30 hover:border-border'
                     }`}
                   >
-                    <p className="font-medium text-foreground">{r.name}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{cleanMd(r.asi_desc).slice(0, 80)}</p>
+                    <p className="font-medium text-foreground">{getRaceNameUa(r.slug, r.name)}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {r.asi?.flatMap((a) =>
+                        a.attributes.map((attr) => (
+                          <span
+                            key={attr}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                          >
+                            {getAbilityNameUa(attr)} +{a.value}
+                          </span>
+                        ))
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -236,9 +251,29 @@ export default function CharacterCreate() {
             )}
             {selectedRace && (
               <div className="text-xs text-muted-foreground bg-background/30 rounded-lg p-3 border border-border/30">
-                <p className="font-medium text-foreground/90 mb-1">Бонуси характеристик:</p>
-                <p>{cleanMd(selectedRace.asi_desc)}</p>
-                {selectedSubrace && <p className="mt-1">{cleanMd(selectedSubrace.asi_desc)}</p>}
+                <p className="font-medium text-foreground/90 mb-1.5">Бонуси характеристик:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedRace.asi?.flatMap((a) =>
+                    a.attributes.map((attr) => (
+                      <span
+                        key={attr}
+                        className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                      >
+                        {getAbilityNameUa(attr)} +{a.value}
+                      </span>
+                    ))
+                  )}
+                  {selectedSubrace?.asi?.flatMap((a) =>
+                    a.attributes.map((attr) => (
+                      <span
+                        key={attr}
+                        className="px-2 py-0.5 rounded bg-sky-500/15 text-sky-400 border border-sky-500/20"
+                      >
+                        {getAbilityNameUa(attr)} +{a.value}
+                      </span>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -267,18 +302,20 @@ export default function CharacterCreate() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <p className="font-medium text-foreground">{c.name}</p>
+                      <p className="font-medium text-foreground">{getClassNameUa(c.slug, c.name)}</p>
                       <span className="text-xs px-1.5 py-0.5 rounded bg-accent/60 text-foreground/70">{c.hit_dice}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">HP 1 рівня: {c.hp_at_1st_level}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Кістка HP: {c.hit_dice}</p>
                   </button>
                 ))}
               </div>
             )}
             {selectedClass && (
               <div className="text-xs text-muted-foreground bg-background/30 rounded-lg p-3 border border-border/30">
-                <p className="font-medium text-foreground/90 mb-1">{selectedClass.name}</p>
-                <p>Збереження: {selectedClass.prof_saving_throws}</p>
+                <p className="font-medium text-foreground/90 mb-1">
+                  {getClassNameUa(selectedClass.slug, selectedClass.name)}
+                </p>
+                <p>Рятівні кидки: {translateAbilityNames(selectedClass.prof_saving_throws)}</p>
                 <p className="mt-1">Броня: {selectedClass.prof_armor}</p>
               </div>
             )}
@@ -315,12 +352,15 @@ export default function CharacterCreate() {
               <div className="bg-background/30 rounded-lg p-3 border border-border/30">
                 <p className="text-muted-foreground text-xs">Раса</p>
                 <p className="text-foreground font-medium">
-                  {selectedRace?.name} {selectedSubrace ? `(${selectedSubrace.name})` : ''}
+                  {selectedRace ? getRaceNameUa(selectedRace.slug, selectedRace.name) : ''}{' '}
+                  {selectedSubrace ? `(${selectedSubrace.name})` : ''}
                 </p>
               </div>
               <div className="bg-background/30 rounded-lg p-3 border border-border/30">
                 <p className="text-muted-foreground text-xs">Клас</p>
-                <p className="text-foreground font-medium">{selectedClass?.name}</p>
+                <p className="text-foreground font-medium">
+                  {selectedClass ? getClassNameUa(selectedClass.slug, selectedClass.name) : ''}
+                </p>
               </div>
               <div className="bg-background/30 rounded-lg p-3 border border-border/30">
                 <p className="text-muted-foreground text-xs">Здоров'я (HP)</p>
