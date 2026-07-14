@@ -53,7 +53,7 @@ export default function Register() {
     }
   };
 
-  const handleНадіслати ще раз = async () => {
+  const handleResend = async () => {
     setError("");
     try {
       await base44.auth.resendOtp(email);
@@ -116,7 +116,7 @@ export default function Register() {
         </Button>
         <p className="text-center text-sm text-muted-foreground mt-4">
           Не отримали код?{" "}
-          <button onClick={handleНадіслати ще раз} className="text-primary font-medium hover:underline">
+          <button onClick={handleResend} className="text-primary font-medium hover:underline">
             Надіслати ще раз
           </button>
         </p>
